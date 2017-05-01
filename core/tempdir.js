@@ -1,3 +1,7 @@
+const fs = require('fs')
+const path = require('path');
+const rimraf = require('rimraf')
+
 let i = 0
 
 function makeDir (path) {
@@ -9,7 +13,7 @@ function makeDir (path) {
 }
 
 module.exports = {
-    createWorkDir (parentDir) {
+    createDir (parentDir) {
         return new Promise((resolve, reject) => {
             let attmepts = 0
             let error
@@ -34,7 +38,7 @@ module.exports = {
         })
     },
 
-    removeWorkDir (dir) {
+    removeDir (dir) {
         return new Promise((resolve, reject) => {
             rimraf(dir, function (error) {
                 error ? reject(error) : resolve()
