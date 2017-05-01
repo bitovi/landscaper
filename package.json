@@ -18,6 +18,7 @@
   "homepage": "https://github.com/bitovi/xmod#readme",
   "dependencies": {
     "git-clone": "^0.1.0",
+    "request": "^2.81.0",
     "rimraf": "^2.6.1"
   }
 }

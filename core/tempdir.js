@@ -1,5 +1,5 @@
 const fs = require('fs')
-const path = require('path');
+const path = require('path')
 const rimraf = require('rimraf')
 
 let i = 0
