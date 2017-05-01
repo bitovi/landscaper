@@ -13,23 +13,23 @@ module.exports = {
             options: {...descriptors}
         }
     */
-    getInfoForUrl (url) {
+    getInfoForUrl (url, options) {
         const resolver = resolvers.find(r => r.isMatch(url))
         if (!resolver) {
             return Promise.reject(new Error(`No resolver found for URL: ${url}`))
         }
-        return resolver.getInfoForUrl(url)
+        return resolver.getInfoForUrl(url, options)
     },
 
     /*
         Returns a function which will accept the root of the project
         and the mod options and return a promise for when the mod is complete
     */
-    getExecutorForUrl (url) {
+    getExecutorForUrl (url, options) {
         const resolver = resolvers.find(r => r.isMatch(url))
         if (!resolver) {
             return Promise.reject(new Error(`No resolver found for URL: ${url}`))
         }
-        return resolver.getExecutorForUrl(url)
+        return resolver.getExecutorForUrl(url, options)
     }
 }

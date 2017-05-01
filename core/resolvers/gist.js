@@ -9,7 +9,8 @@ function getOwnerAndId (url) {
     }
 }
 
-function getGist (id) {
+function getGist (id, options) {
+    // TODO: request with auth token
     const url = `https://api.github.com/v3/gists/${id}`
     return new Promise((resolve, reject) => {
         request({url, json: true}).then((error, res, data) => {
@@ -18,7 +19,8 @@ function getGist (id) {
     })
 }
 
-function getGistFile (url) {
+function getGistFile (url, options) {
+    // TODO: request with auth token
     return new Promise((resolve, reject) => {
         request({url}).then((error, res, body) => {
             error ? reject(error) : resolve(body)
@@ -55,14 +57,14 @@ module.exports = {
         return !!getOwnerAndId(url)
     },
 
-    getInfoForUrl (url) {
+    getInfoForUrl (url, options) {
         const [owner, id] = getOwnerAndId(url)
-        return getGist(id).then(gist => {
+        return getGist(id, options).then(gist => {
             const fileUrl = getPrimaryFile(gist)
             if (!fileUrl) {
                 throw new Error('Gist did not have any files')
             }
-            return getGistFile(fileUrl).then(script => {
+            return getGistFile(fileUrl, options).then(script => {
                 return {
                     name: path.basename(fileUrl),
                     description: gist.description,
@@ -72,17 +74,19 @@ module.exports = {
         })
     },
 
-    getExecutorForUrl (url) {
+    getExecutorForUrl (url, options) {
         const [owner, id] = getOwnerAndId(url)
-        return getGist(id).then(gist => {
+        return getGist(id, options).then(gist => {
             const fileUrl = getPrimaryFile(gist)
             if (!fileUrl) {
                 throw new Error('Gist did not have any files')
             }
-            const executor = compileModule(script)
-            return function execute(root, options) {
-                return executor.run(root, options)
-            }
+            return getGistFile(fileUrl, options).then(script => {
+                const executor = compileModule(script)
+                return function execute(root, options) {
+                    return executor.run(root, options)
+                }
+            })
         })
     }
 }

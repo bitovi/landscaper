@@ -21,7 +21,7 @@ module.exports = {
             while (attmepts++ < 3) {
                 try {
                     name = 'work-dir-' + (i++)
-                    filepath = path.join(directory, name)
+                    filepath = path.join(parentDir, name)
                     await makeDir(filepath)
                 } catch (caughtError) {
                     error = caughtError
