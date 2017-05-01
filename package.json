@@ -1,0 +1,19 @@
+{
+  "name": "xmod",
+  "version": "0.0.1",
+  "description": "CodeMods as a Service",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bitovi/xmod.git"
+  },
+  "author": "Bitovi",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/bitovi/xmod/issues"
+  },
+  "homepage": "https://github.com/bitovi/xmod#readme"
+}
