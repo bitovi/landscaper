@@ -1,0 +1,163 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+
+  <title>xmod</title>
+  <meta name="description" content="The HTML5 Herald">
+  <meta name="author" content="Bitovi">
+
+  <!-- <link rel="stylesheet" href="css/styles.css?v=1.0"> -->
+
+	<style>
+	body, html, h1, h2 {
+		margin: 0;
+		line-height: 1;
+	}
+	body {
+		margin: 0;
+		border-top: 3px solid #ff5959;
+		font-family: sans-serif;
+		background-color: #fce6e6;
+		color: #bf3f3f;
+	}
+	header {
+		height: 100px;
+		background-color: white;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 0 2vw;
+	}
+	header h1 {
+		color: black;
+		font-size: 3em;
+		font-weight: normal;
+		margin-left: 20px;
+	}
+	header nav {
+		right: 5%;
+	}
+	header nav a {
+		color: #bf3f3f;
+		text-decoration: none;
+		margin: 2vw;
+		font-size: 2em;
+	}
+	#content {
+		text-align: center;
+		padding-top: 40px;
+	}
+	input#searchMods {
+		width: 80%;
+		padding: 20px;
+		font-size: 1.5em;
+		border: 0px solid grey;
+		border-radius: 20px;
+		color: #bf3f3f;
+		outline: 0 !important;
+		text-align: center;
+	}
+	input#searchMods::-webkit-input-placeholder { /* WebKit, Blink, Edge */
+	    color: #bf3f3f;
+	}
+	input#searchMods:-moz-placeholder { /* Mozilla Firefox 4 to 18 */
+	   color: #bf3f3f;
+	   opacity: 1;
+	}
+	input#searchMods::-moz-placeholder { /* Mozilla Firefox 19+ */
+	   color: #bf3f3f;
+	   opacity: 1;
+	}
+	input#searchMods:-ms-input-placeholder { /* Internet Explorer 10-11 */
+	   color: #bf3f3f;
+	}
+
+	#mods {
+		/*display: flex;*/
+		/*flex-wrap: wrap;*/
+		/*justify-content: space-between;*/
+		padding: 0 20px;
+		margin-top: 30px;
+	}
+	#mods > div {
+    width: 300px;
+		height: 200px;
+		background-color: white;
+		text-align: left;
+		padding: 20px;
+		margin: 10px;
+		display: inline-block;
+		vertical-align: top;
+		border: 1px solid transparent;
+	}
+	#mods > div:hover {
+		border: 1px solid #ff5959;
+		cursor: pointer;
+	}
+	#mods > div h2 {
+		margin-bottom: 10px;
+	}
+	</style>
+
+  <!--[if lt IE 9]>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.js"></script>
+  <![endif]-->
+
+	<script src="../node_modules/jquery/dist/jquery.min.js"></script>
+	<script>
+	//http://npmsearch.com/query?q=dom&fields=name,keywords,description
+
+	var renderMods = function(mods) {
+		$('#mods').html(mods.map(function(mod) {
+			return `<div>
+				<h2>${mod.name}</h2>
+				${mod.description}
+			</div>`;
+		}));
+	};
+
+	var queryNPM = function(query) {
+		$.getJSON(`http://npmsearch.com/query?q=${query}&fields=name,description&size=25`, function(data) {
+			renderMods(data.results);
+		});
+	};
+
+	$(document).ready(function() {
+
+		$('#searchMods').on('input', function() {
+			var val = $(this).val();
+			queryNPM(val);
+		});
+
+		$('body').on('click', '#mods > div', function() {
+			var name = $(this).find('h2').text();
+			window.open('https://www.npmjs.com/package/' + name);
+			this.blur();
+		});
+
+	});
+	</script>
+</head>
+
+<body>
+
+  <header>
+		<h1>xmod</h1>
+		<nav>
+			<a href="#">faq</a>
+			<a href="#">apply</a>
+		</nav>
+	</header>
+
+	<div id="content">
+
+		<input type="text" placeholder="Search mods on npm..." id="searchMods">
+
+		<div id="mods"></div>
+
+	</div>
+
+</body>
+</html>
