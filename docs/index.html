@@ -8,7 +8,7 @@
   <meta name="description" content="The HTML5 Herald">
   <meta name="author" content="Bitovi">
 
-  <link rel="stylesheet" href="css/styles.css?v=1.0">
+  <!-- <link rel="stylesheet" href="css/styles.css?v=1.0"> -->
 
 	<style>
 	body, html, h1, h2 {
@@ -90,6 +90,11 @@
 		margin: 10px;
 		display: inline-block;
 		vertical-align: top;
+		border: 1px solid transparent;
+	}
+	#mods > div:hover {
+		border: 1px solid #ff5959;
+		cursor: pointer;
 	}
 	#mods > div h2 {
 		margin-bottom: 10px;
@@ -100,7 +105,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.js"></script>
   <![endif]-->
 
-	<script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+	<script src="../node_modules/jquery/dist/jquery.min.js"></script>
 	<script>
 	//http://npmsearch.com/query?q=dom&fields=name,keywords,description
 
@@ -126,6 +131,12 @@
 			queryNPM(val);
 		});
 
+		$('body').on('click', '#mods > div', function() {
+			var name = $(this).find('h2').text();
+			window.open('https://www.npmjs.com/package/' + name);
+			this.blur();
+		});
+
 	});
 	</script>
 </head>
@@ -144,24 +155,7 @@
 
 		<input type="text" placeholder="Search mods on npm..." id="searchMods">
 
-		<div id="mods">
-
-			<div>
-				<h2>{mod.name}</h2>
-				{mod.description}
-			</div>
-
-			<div>
-				<h2>{mod.name}</h2>
-				{mod.description}
-			</div>
-
-			<div>
-				<h2>{mod.name}</h2>
-				{mod.description}
-			</div>
-
-		</div>
+		<div id="mods"></div>
 
 	</div>
 
