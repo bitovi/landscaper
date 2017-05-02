@@ -12,10 +12,7 @@
 	<!-- <link rel="stylesheet" href="css/styles.css?v=1.0"> -->
 
 	<style>
-		body,
-		html,
-		h1,
-		h2 {
+		body, html, h1, h2 {
 			margin: 0;
 			line-height: 1;
 		}
@@ -75,33 +72,27 @@
 			/* WebKit, Blink, Edge */
 			color: #bf3f3f;
 		}
-
 		input#searchMods:-moz-placeholder {
 			/* Mozilla Firefox 4 to 18 */
 			color: #bf3f3f;
 			opacity: 1;
 		}
-
 		input#searchMods::-moz-placeholder {
 			/* Mozilla Firefox 19+ */
 			color: #bf3f3f;
 			opacity: 1;
 		}
-
 		input#searchMods:-ms-input-placeholder {
 			/* Internet Explorer 10-11 */
 			color: #bf3f3f;
 		}
 
 		#mods {
-			/*display: flex;*/
-			/*flex-wrap: wrap;*/
-			/*justify-content: space-between;*/
 			padding: 0 20px;
 			margin-top: 30px;
 		}
 
-		#mods>div {
+		#mods > div {
 			width: 300px;
 			height: 200px;
 			background-color: white;
@@ -113,12 +104,12 @@
 			border: 1px solid #fce6e6;
 		}
 
-		#mods>div:hover {
+		#mods > div:hover {
 			border: 1px solid #ff5959;
 			cursor: pointer;
 		}
 
-		#mods>div h2 {
+		#mods > div h2 {
 			margin-bottom: 10px;
 		}
 	</style>
@@ -134,9 +125,9 @@
 		var renderMods = function(mods) {
 			$('#mods').html(mods.map(function(mod) {
 				return `<div>
-				<h2>${mod.name}</h2>
-				${mod.description}
-			</div>`;
+					<h2>${mod.name}</h2>
+					${mod.description}
+				</div>`;
 			}));
 		};
 
@@ -173,11 +164,8 @@
 	</header>
 
 	<div id="content">
-
 		<input type="text" placeholder="Search mods on npm..." id="searchMods">
-
 		<div id="mods"></div>
-
 	</div>
 
 </body>
