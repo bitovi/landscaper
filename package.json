@@ -1,24 +1,71 @@
 {
-  "name": "xmod",
-  "version": "0.0.1",
+  "name": "landscaper",
   "description": "CodeMods as a Service",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/bitovi/xmod.git"
-  },
+  "version": "0.0.1",
   "author": "Bitovi",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/bitovi/xmod/issues"
+  "ava": {
+    "require": [
+      "babel-register"
+    ],
+    "babel": "inherit"
   },
-  "homepage": "https://github.com/bitovi/xmod#readme",
+  "babel": {
+    "presets": [
+      "es2015",
+      "stage-0"
+    ],
+    "plugins": [],
+    "env": {
+      "nyc": {
+        "plugins": [
+          "istanbul"
+        ]
+      }
+    }
+  },
+  "bugs": {
+    "url": "https://github.com/bitovi/landscaper/issues"
+  },
   "dependencies": {
-    "git-clone": "^0.1.0",
+    "npmi": "^2.0.1",
     "request": "^2.81.0",
     "rimraf": "^2.6.1"
+  },
+  "devDependencies": {
+    "ava": "^0.19.1",
+    "babel-polyfill": "^6.23.0",
+    "babel-preset-es2015": "^6.24.1",
+    "babel-preset-stage-0": "^6.24.1",
+    "babel-regenerator-runtime": "^6.5.0",
+    "del": "^2.2.2",
+    "fixpack": "^2.3.1",
+    "gulp": "^3.9.1",
+    "gulp-babel": "^6.1.2",
+    "gulp-sourcemaps": "^2.6.0",
+    "nyc": "^10.3.0",
+    "source-map-support": "^0.4.15",
+    "standard": "^10.0.2"
+  },
+  "files": [
+    "lib"
+  ],
+  "homepage": "https://github.com/bitovi/landscaper#readme",
+  "keywords": [
+    "codemods",
+    "mod",
+    "transforms"
+  ],
+  "license": "MIT",
+  "main": "index.js",
+  "repository": "git+https://github.com/bitovi/landscaper.git",
+  "scripts": {
+    "build": "gulp",
+    "coveralls": "npm run report && nyc report --reporter=text-lcov | coveralls",
+    "lint": "standard --fix && fixpack",
+    "prepublish": "npm run build && npm run test",
+    "report": "NODE_ENV=nyc nyc npm test",
+    "test": "npm run lint && ava",
+    "test-ci": "npm run prepublish",
+    "watch": "gulp watch"
   }
 }
