@@ -29,10 +29,12 @@
   "dependencies": {
     "npmi": "^2.0.1",
     "request": "^2.81.0",
-    "rimraf": "^2.6.1"
+    "rimraf": "^2.6.1",
+    "validate-npm-package-name": "^3.0.0"
   },
   "devDependencies": {
     "ava": "^0.19.1",
+    "babel-plugin-istanbul": "^4.1.3",
     "babel-polyfill": "^6.23.0",
     "babel-preset-es2015": "^6.24.1",
     "babel-preset-stage-0": "^6.24.1",

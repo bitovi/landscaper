@@ -3,17 +3,20 @@ import path from 'path'
 import npmi from 'npmi'
 import rimraf from 'rimraf'
 
-export function isExistingDirectory (path) {
+function isExistingDirectory (path) {
   return new Promise((resolve, reject) => {
     fs.stat(path, (error, stats) => {
-      resolve(!!error && stats.isDirectory())
+      resolve(!error && stats.isDirectory())
     })
   })
 }
 
-export function npmInstall (packageName) {
+function npmInstall (directory, packageName) {
   return new Promise((resolve, reject) => {
-    npmi({name: packageName}, (error, result) => {
+    npmi({
+      name: packageName,
+      path: directory
+    }, (error, result) => {
       error ? reject(error) : resolve(result)
     })
   })
@@ -35,10 +38,12 @@ export default class PackageCache {
 
   static auto () {
     const cachePath = path.join(path.dirname(__dirname), 'cache')
-    fs.mkdirSync(cachePath)
     const cache = new PackageCache(cachePath)
     cache.empty = () => {
       rimraf.sync(cachePath)
     }
+    cache.empty()
+    fs.mkdirSync(cachePath)
+    return cache
   }
 }

@@ -1,11 +1,11 @@
 import {getExecutor} from './resolve'
 
-export async function loadMods (mods, cache, emit) {
+export async function loadMods (mods, options, emit) {
   const modMap = {}
   for (const mod of mods) {
     emit('mod/resolving', {mod})
     try {
-      modMap[mod.id] = await getExecutor(mod.id, {cache})
+      modMap[mod.id] = await getExecutor(mod.id, options)
     } catch (error) {
       emit('mod/not-found', {mod, error})
       throw error
@@ -29,13 +29,13 @@ export async function applyMods (directory, mods, modMap, emit) {
   }
 }
 
-export default async function execute ({directory, reporter, mods, cache}) {
+export default async function execute ({directory, reporter, mods, options}) {
   function emit (type, data) {
     data.type = type
     reporter.emit(type, data)
   }
 
-  const modMap = await loadMods(mods, cache, emit)
+  const modMap = await loadMods(mods, options, emit)
   await applyMods(directory, mods, modMap, emit)
   emit('done', {directory, mods})
 }
