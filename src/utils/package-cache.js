@@ -48,6 +48,7 @@ function npmInstall (directory, packageName) {
 export default class PackageCache {
   constructor (directory) {
     this._directory = directory
+    this.gistCounter = 0
   }
 
   async getPackage (packageName) {
@@ -57,6 +58,26 @@ export default class PackageCache {
       await npmInstall(this._directory, packageName)
     }
     return packagePath
+  }
+
+  async saveGist (rawGistUrl, scriptText) {
+    const filename = path.basename(rawGistUrl).split('#')[0]
+    const filepath = path.join(this._directory, filename + '-' + this.gistCounter++)
+
+    await new Promise((resolve, reject) => {
+      fs.writeFile(filepath, scriptText, error => (
+        error ? reject(error) : resolve()
+      ))
+    })
+
+    const cleanup = () => {
+      return new Promise((resolve, reject) => {
+        fs.unlink(filepath, error => {
+          error ? reject(error) : resolve()
+        })
+      })
+    }
+    return {scriptPath: filepath, cleanup}
   }
 
   static auto () {

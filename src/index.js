@@ -2,6 +2,7 @@ import execute from './execute'
 import {getInfo} from './resolve'
 import EventEmitter from 'events'
 import PackageCache from './utils/package-cache'
+import TransformLibrary from './utils/transform-library'
 
 /*
     getInfoForMod(modName, options: {[cache]})
@@ -14,6 +15,8 @@ import PackageCache from './utils/package-cache'
         access token for using the Github gist API
       cache PackageCache: npm install directory
         [optional] default is self-cleanup post-run
+      transforms TransformLibrary
+        [optional] default contains included transforms
 
     @returns
     Promise.resolve({
@@ -30,6 +33,9 @@ import PackageCache from './utils/package-cache'
     })
 */
 export function getInfoForMod (modName, options = {}) {
+  if (!options.transforms) {
+    options.transforms = TransformLibrary.auto()
+  }
   if (!options.cache) {
     const cache = options.cache = PackageCache.auto()
     return getInfo(modName, options)
@@ -59,6 +65,8 @@ export function getInfoForMod (modName, options = {}) {
       access token for using the Github gist API
     cache PackageCache: npm install directory
       [optional] default is self-cleanup post-run
+    transforms TransformLibrary
+      [optional] default contains included transforms
 
   @returns
   reporter EventEmitter
@@ -79,6 +87,9 @@ export function run (directory, mods, options = {}) {
       cache.empty()
     })
   }
+  if (!options.transforms) {
+    options.transforms = TransformLibrary.auto()
+  }
   execute({
     directory,
     reporter,
@@ -88,6 +99,10 @@ export function run (directory, mods, options = {}) {
     reporter.emit('error', error)
   })
   return reporter
+}
+
+export function createTransformLibrary (transforms) {
+  return new TransformLibrary(transforms)
 }
 
 export function createPackageCache (directory) {

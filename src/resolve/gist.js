@@ -122,24 +122,30 @@ export default {
     }
     const [name] = path.basename(fileUrl).split('#')
     const script = await getGistFile(fileUrl, resolveOptions)
-    const options = compileModule(script).getOptions()
+    const {cache, transforms} = resolveOptions
+    const {scriptPath, cleanup} = await cache.saveGist(fileUrl, script)
+    const options = transforms.getMod(scriptPath).getOptions()
+    await cleanup()
     return {name, description, options}
   },
 
-  async getExecutor (url, options) {
+  async getExecutor (url, resolveOptions) {
     let fileUrl = url
     if (!isRawGistUrl(url)) {
       const [id, filenames] = getGistId(url)
-      const gist = await getGist(id, options)
+      const gist = await getGist(id, resolveOptions)
       fileUrl = getPrimaryFile(gist, filenames)
     }
     if (!fileUrl) {
       throw new Error('Gist did not have any files')
     }
-    const script = await getGistFile(fileUrl, options)
-    const executor = compileModule(script)
+    const script = await getGistFile(fileUrl, resolveOptions)
+    const {cache, transforms} = resolveOptions
+    const {scriptPath, cleanup} = await cache.saveGist(fileUrl, script)
+    const runner = transforms.getMod(scriptPath)
+    await cleanup()
     return function execute (root, options) {
-      return executor.run(root, options)
+      return runner.run(root, options)
     }
   }
 }

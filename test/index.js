@@ -191,3 +191,37 @@ test('run() should work for npm subpath modules', async t => {
   t.is(text, content)
   await cleanup()
 })
+
+// jscodeshift test
+const shiftGist = 'https://gist.github.com/andrejewski/6e2f6205c91fd099e09b86e309daf642#file-reverse-vars-js'
+
+test('run() should work for raw gists', async t => {
+  const {directory, cleanup} = await createTestDir('code-shift')
+  await new Promise((resolve, reject) => {
+    const filepath = path.join(directory, 'foo.js')
+    fs.writeFile(filepath, 'var foo = 1;', (error, text) => {
+      error ? reject(error) : resolve(text)
+    })
+  })
+
+  const mods = [{
+    id: shiftGist,
+    options: {path: [directory]}
+  }]
+
+  const reporter = run(directory, mods, {accessToken, cache: createPackageCache(directory)})
+  await new Promise((resolve, reject) => {
+    reporter.on('error', reject)
+    reporter.on('done', resolve)
+  })
+
+  const text = await new Promise((resolve, reject) => {
+    const filepath = path.join(directory, 'foo.js')
+    fs.readFile(filepath, {encoding: 'utf8'}, (error, text) => {
+      error ? reject(error) : resolve(text)
+    })
+  })
+
+  t.is(text, 'var oof = 1;')
+  await cleanup()
+})

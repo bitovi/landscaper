@@ -33,21 +33,22 @@ export default {
     return !!getNameAndPath(modName)
   },
 
-  async getInfo (modName, {cache}) {
+  async getInfo (modName, {cache, transforms}) {
     const [packageName, packagePath] = getNameAndPath(modName)
     const {name, description} = await getInfoForPackage(packageName)
     const packageDir = await cache.getPackage(packageName)
     const requirePath = path.join(packageDir, packagePath || '')
-    const options = require(requirePath).getOptions()
+    const options = transforms.getMod(requirePath).getOptions()
     return {name, description, options}
   },
 
-  async getExecutor (modName, {cache}) {
+  async getExecutor (modName, {cache, transforms}) {
     const [packageName, packagePath] = getNameAndPath(modName)
     const packageDir = await cache.getPackage(packageName)
     const requirePath = path.join(packageDir, packagePath || '')
+    const runner = transforms.getMod(requirePath)
     return function (root, options) {
-      return require(requirePath).run(root, options)
+      return runner.run(root, options)
     }
   }
 }
