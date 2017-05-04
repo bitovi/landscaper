@@ -11,13 +11,36 @@ function isExistingDirectory (path) {
   })
 }
 
+// we need this to fix problems with npmlog and inquirer
+function silence (promise) {
+  const stdout = console._stdout
+  console._stdout = { write () {} }
+  return promise().then(x => {
+    return new Promise((resolve) => {
+      setTimeout(() => resolve(x), 100)
+    })
+  }).then(x => {
+    console._stdout = stdout
+    return x
+  }, error => {
+    console._stdout = stdout
+    throw error
+  })
+}
+
 function npmInstall (directory, packageName) {
-  return new Promise((resolve, reject) => {
-    npmi({
-      name: packageName,
-      path: directory
-    }, (error, result) => {
-      error ? reject(error) : resolve(result)
+  return silence(() => {
+    return new Promise((resolve, reject) => {
+      npmi({
+        name: packageName,
+        path: directory,
+        npmLoad: {
+          loglevel: 'silent',
+          progress: false
+        }
+      }, (error, result) => {
+        error ? reject(error) : resolve(result)
+      })
     })
   })
 }

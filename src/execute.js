@@ -33,6 +33,7 @@ export default async function execute ({directory, reporter, mods, options}) {
   function emit (type, data) {
     data.type = type
     reporter.emit(type, data)
+    reporter.emit('log', {type, data})
   }
 
   const modMap = await loadMods(mods, options, emit)

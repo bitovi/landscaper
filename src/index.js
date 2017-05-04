@@ -1,5 +1,3 @@
-import 'babel-regenerator-runtime'
-
 import execute from './execute'
 import {getInfo} from './resolve'
 import EventEmitter from 'events'

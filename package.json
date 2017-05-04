@@ -14,7 +14,9 @@
       "es2015",
       "stage-0"
     ],
-    "plugins": [],
+    "plugins": [
+      "transform-runtime"
+    ],
     "env": {
       "nyc": {
         "plugins": [
@@ -23,10 +25,15 @@
       }
     }
   },
+  "bin": {
+    "landscaper": "./lib/cli.js"
+  },
   "bugs": {
     "url": "https://github.com/bitovi/landscaper/issues"
   },
   "dependencies": {
+    "babel-runtime": "^6.23.0",
+    "inquirer": "^3.0.6",
     "npmi": "^2.0.1",
     "request": "^2.81.0",
     "rimraf": "^2.6.1",
@@ -35,10 +42,10 @@
   "devDependencies": {
     "ava": "^0.19.1",
     "babel-plugin-istanbul": "^4.1.3",
+    "babel-plugin-transform-runtime": "^6.23.0",
     "babel-polyfill": "^6.23.0",
     "babel-preset-es2015": "^6.24.1",
     "babel-preset-stage-0": "^6.24.1",
-    "babel-regenerator-runtime": "^6.5.0",
     "del": "^2.2.2",
     "fixpack": "^2.3.1",
     "gulp": "^3.9.1",
@@ -49,6 +56,7 @@
     "standard": "^10.0.2"
   },
   "files": [
+    "bin",
     "lib"
   ],
   "homepage": "https://github.com/bitovi/landscaper#readme",
@@ -58,15 +66,16 @@
     "transforms"
   ],
   "license": "MIT",
-  "main": "index.js",
+  "main": "lib/index.js",
   "repository": "git+https://github.com/bitovi/landscaper.git",
   "scripts": {
+    "//prepublish": "npm run build && npm run test",
     "build": "gulp",
+    "cli": "npm run landscaper",
     "coveralls": "npm run report && nyc report --reporter=text-lcov | coveralls",
     "lint": "standard --fix && fixpack",
-    "prepublish": "npm run build && npm run test",
     "report": "NODE_ENV=nyc nyc npm test",
-    "test": "npm run lint && ava",
+    "test": "npm run lint && ava --serial",
     "test-ci": "npm run prepublish",
     "watch": "gulp watch"
   }
