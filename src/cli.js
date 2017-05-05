@@ -56,7 +56,7 @@ async function landscape ([directory]) {
     }
     let msg = '  '
     if (data.mod) {
-      msg += '[' + data.mod.id + '] '
+      msg += '[' + data.mod.name + '] '
     }
     msg += type.slice(4)
     if (data.error) {

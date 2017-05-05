@@ -5,7 +5,7 @@ export async function loadMods (mods, options, emit) {
   for (const mod of mods) {
     emit('mod/resolving', {mod})
     try {
-      modMap[mod.id] = await getExecutor(mod.id, options)
+      modMap[mod._id] = await getExecutor(mod.name, options)
     } catch (error) {
       emit('mod/not-found', {mod, error})
       throw error
@@ -17,7 +17,7 @@ export async function loadMods (mods, options, emit) {
 
 export async function applyMods (directory, mods, modMap, emit) {
   for (const mod of mods) {
-    const executor = modMap[mod.id]
+    const executor = modMap[mod._id]
     emit('mod/applying', {mod})
     try {
       await executor(directory, mod.options)
