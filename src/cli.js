@@ -127,7 +127,7 @@ async function addMod (accessToken) {
   console.log('Mod name: ' + info.name)
   console.log('Mod description: ' + info.description)
   const options = await inquirer.prompt(info.options)
-  return {mod: {id: modName, options}, accessToken}
+  return {mod: {name: modName, options}, accessToken}
 }
 
 const commands = {
