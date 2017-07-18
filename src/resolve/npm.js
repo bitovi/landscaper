@@ -38,7 +38,8 @@ export default {
     const {name, description} = await getInfoForPackage(packageName)
     const packageDir = await cache.getPackage(packageName)
     const requirePath = path.join(packageDir, packagePath || '')
-    const options = transforms.getMod(requirePath).getOptions()
+    const mod = transforms.getMod(requirePath)
+    const options = mod.getOptions ? mod.getOptions() : []
     return {name, description, options}
   },
 
