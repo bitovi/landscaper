@@ -124,7 +124,8 @@ export default {
     const script = await getGistFile(fileUrl, resolveOptions)
     const {cache, transforms} = resolveOptions
     const {scriptPath, cleanup} = await cache.saveGist(fileUrl, script)
-    const options = transforms.getMod(scriptPath).getOptions()
+    const mod = transforms.getMod(scriptPath)
+    const options = mod.getOptions ? mod.getOptions() : []
     await cleanup()
     return {name, description, options}
   },
