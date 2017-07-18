@@ -1,7 +1,7 @@
 import fs from 'fs'
 import path from 'path'
-import npmi from 'npmi'
 import rimraf from 'rimraf'
+import npmProg from 'npm-programmatic'
 
 function isExistingDirectory (path) {
   return new Promise((resolve, reject) => {
@@ -11,37 +11,24 @@ function isExistingDirectory (path) {
   })
 }
 
-// we need this to fix problems with npmlog and inquirer
-function silence (promise) {
-  const stdout = console._stdout
-  console._stdout = { write () {} }
-  return promise().then(x => {
-    return new Promise((resolve) => {
-      setTimeout(() => resolve(x), 100)
+export function ensureLocalPackageJson (directory) {
+  const packageJsonPath = path.join(directory, 'package.json')
+  const hasPackageJson = fs.existsSync(packageJsonPath)
+  if (hasPackageJson) {
+    return Promise.resolve()
+  }
+
+  const content = JSON.stringify({name: 'needed-for-local-cache-install'})
+  return new Promise((resolve, reject) => {
+    fs.writeFile(packageJsonPath, content, error => {
+      error ? reject(error) : resolve()
     })
-  }).then(x => {
-    console._stdout = stdout
-    return x
-  }, error => {
-    console._stdout = stdout
-    throw error
   })
 }
 
-function npmInstall (directory, packageName) {
-  return silence(() => {
-    return new Promise((resolve, reject) => {
-      npmi({
-        name: packageName,
-        path: directory,
-        npmLoad: {
-          loglevel: 'silent',
-          progress: false
-        }
-      }, (error, result) => {
-        error ? reject(error) : resolve(result)
-      })
-    })
+export function npmInstall (directory, packageName) {
+  return ensureLocalPackageJson(directory).then(() => {
+    return npmProg.install(packageName, {cwd: directory})
   })
 }
 

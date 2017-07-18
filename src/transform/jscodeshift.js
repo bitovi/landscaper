@@ -1,5 +1,4 @@
 import fs from 'fs'
-import path from 'path'
 import globby from 'globby'
 import Runner from 'jscodeshift/dist/Runner'
 
@@ -24,13 +23,14 @@ export default function (mod, modFilePath) {
 
     run (directory, options) {
       const paths = typeof options.path === 'string' ? options.path.split(',') : options.path
+      const files = globby.sync(paths, { cwd: directory })
       const codeOptions = {
-        path: globby.sync(paths, { cwd: directory }).map(file => path.join(directory, file)),
+        path: files,
         transform: fixedPath,
         babel: true,
         extensions: 'js',
         runInBand: false,
-        silent: false,
+        silent: true,
         parser: 'babel',
         landscaper: options
       }

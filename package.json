@@ -36,7 +36,7 @@
     "globby": "^6.1.0",
     "inquirer": "^3.0.6",
     "jscodeshift": "^0.3.30",
-    "npmi": "^2.0.1",
+    "npm-programmatic": "0.0.8",
     "request": "^2.81.0",
     "rimraf": "^2.6.1",
     "validate-npm-package-name": "^3.0.0"
