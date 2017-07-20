@@ -1,5 +1,6 @@
 import pkg from '../../package'
 import begin from './begin'
+import sentry from './sentry'
 
 /*
 var job = {
@@ -99,7 +100,10 @@ export default async function main (args) {
   }
 
   const {filepath, job} = await begin(firstArg)
+    .then(({filepath, job}) => sentry(filepath, job))
 
-  log('Filepath:', filepath)
-  log(JSON.stringify(job, null, 2))
+  if (job) {
+    log('Filepath:', filepath)
+    log(JSON.stringify(job, null, 2))
+  }
 }
