@@ -4,6 +4,7 @@ import chalk from 'chalk'
 import inquirer from 'inquirer'
 
 import {getInfoForMod} from '../index'
+import {executeJob} from './execute'
 import PackageCache from '../utils/package-cache'
 
 function log () {
@@ -619,7 +620,24 @@ function previewJobCommand (filepath, job) {
 }
 
 async function runJobCommand (filepath, job) {
-  log('RAN')
+  let accessToken
+  const needsAccessToken = job.githubRepos.length > 0
+  if (needsAccessToken) {
+    log('To create pull requests on Github, I need an access token.')
+    log('Visit your https://github.com/settings/tokens page to make one.')
+    log('I need scope "public_repo" for public-only PRs, otherwise scope "repo".')
+    log('Note: Tokens must be manually entered so they are not accidentally commited.')
+
+    accessToken = await ask({
+      type: 'input',
+      message: 'Github access token:'
+    })
+    if (!accessToken) {
+      return job
+    }
+  }
+
+  await executeJob(job, accessToken)
   return job
 }
 

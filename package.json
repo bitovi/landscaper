@@ -35,12 +35,16 @@
   "dependencies": {
     "babel-runtime": "^6.23.0",
     "chalk": "^2.0.1",
+    "execa": "^0.7.0",
+    "git-clone": "^0.1.0",
     "globby": "^6.1.0",
     "inquirer": "^3.0.6",
     "jscodeshift": "^0.3.30",
     "npm-programmatic": "0.0.8",
+    "octonode": "^0.7.13",
     "request": "^2.81.0",
     "rimraf": "^2.6.1",
+    "tmp": "0.0.31",
     "validate-npm-package-name": "^3.0.0"
   },
   "devDependencies": {
