@@ -1,9 +1,21 @@
 import fs from 'fs'
 import path from 'path'
+import chalk from 'chalk'
 import inquirer from 'inquirer'
+
+import {getInfoForMod} from '../index'
+import PackageCache from '../utils/package-cache'
 
 function log () {
   console.log.apply(console, arguments)
+}
+
+async function ask (question) {
+  const {x} = await inquirer.prompt([{
+    ...question,
+    name: 'x'
+  }])
+  return x
 }
 
 function saveJob (filepath, job) {
@@ -99,8 +111,8 @@ function getCodeModMenu (job) {
   }]
 
   const viewAction = {
-    name: 'View code mods...',
-    value: 'mod/view'
+    name: 'Edit code mods...',
+    value: 'mod/edit'
   }
   const removeAction = {
     name: 'Remove code mods...',
@@ -122,9 +134,15 @@ function getJobMenu (job) {
     value: 'job/delete'
   }]
 
-  const showRun = false // TODO
+  const hasMods = job.mods.length > 0
+  const hasRepos = job.githubRepos.length > 0
+  const hasDirectories = job.directories.length > 0
+  const showRun = (hasDirectories || hasRepos) && hasMods
   if (showRun) {
-    actions.push({
+    actions.unshift({
+      name: 'Preview job',
+      value: 'job/preview'
+    }, {
       name: 'Run job',
       value: 'job/run'
     })
@@ -151,7 +169,12 @@ const actionMap = {
   'repo/add': addGithubRepoSentry,
   'repo/edit': editGithubRepoSentry,
   'repo/remove': removeGithubRepoCommand,
-  'job/delete': deleteJobCommand
+  'mod/add': addModSentry,
+  'mod/edit': editModSentry,
+  'mod/remove': removeModSentry,
+  'job/preview': previewJobCommand,
+  'job/delete': deleteJobCommand,
+  'job/run': runJobCommand
 }
 
 export default async function sentry (filepath, job) {
@@ -434,6 +457,170 @@ async function removeGithubRepoCommand (filepath, job) {
   await saveJob(filepath, newJob)
   log(`Removed ${humanList(badRepos.map(repo => `"${repo}"`))}`)
   return newJob
+}
+
+/// <Mod>
+const cache = PackageCache.auto()
+
+function getModDisplayName (mod) {
+  if (mod.description) {
+    return `${mod.name}: ${mod.description}`
+  } else {
+    return `${mod.name}`
+  }
+}
+
+function isConfigurableMod (mod) {
+  return mod.options && mod.options.length
+}
+
+async function addModSentry (filepath, job) {
+  const modName = await ask({
+    type: 'text',
+    message: 'NPM or Gist mod: (enter nothing to cancel)'
+  })
+  if (!modName) {
+    return job
+  }
+
+  let info
+  try {
+    // TODO: if loading takes long, show a loading message
+    info = await getInfoForMod(modName, {cache})
+  } catch (error) {
+    log('Error:', error.message)
+    return addModSentry(filepath, job)
+  }
+
+  log(`Located ${getModDisplayName(info)}`)
+
+  let optionValues
+  if (isConfigurableMod(info)) {
+    log(`Mod "${info.name}" has configuration options:`)
+    optionValues = await inquirer.prompt(info.options)
+  }
+
+  const newMod = {...info, optionValues}
+  const newJob = {...job, mods: [...job.mods, newMod]}
+
+  await saveJob(filepath, newJob)
+  log(`Added mod "${info.name}"`)
+  return addModSentry(filepath, newJob)
+}
+
+async function removeModSentry (filepath, job) {
+  const choices = job.mods.map(mod => ({
+    name: getModDisplayName(mod),
+    value: mod.name
+  }))
+
+  const removed = await ask({
+    type: 'checkbox',
+    message: 'Which mods should be removed?',
+    choices
+  })
+
+  if (!removed.length) {
+    return job
+  }
+
+  const newMods = job.mods.filter(mod => !removed.includes(mod.name))
+  const newJob = {...job, mods: newMods}
+
+  await saveJob(filepath, newJob)
+  log(`Removed ${humanList(removed.map(m => `"${m}"`))}`)
+  return newJob
+}
+
+async function editModSentry (filepath, job) {
+  const choices = job.mods.map(mod => ({
+    name: getModDisplayName(mod),
+    value: mod.name
+  }))
+
+  choices.unshift({
+    name: 'Never mind',
+    value: null
+  })
+
+  const modName = await ask({
+    type: 'list',
+    message: 'Which mod should be edited?',
+    choices
+  })
+  if (!modName) {
+    return job
+  }
+
+  const mod = job.mods.find(mod => mod.name === modName)
+  if (!isConfigurableMod(mod)) {
+    log(`Mod "${mod.name}" has no configuration options to edit`)
+    return editModSentry(filepath, job)
+  }
+
+  const optionValues = await inquirer.prompt(mod.options)
+  Object.assign(mod, {optionValues})
+
+  await saveJob(filepath, job)
+  log(`Modifed "${mod.name}"`)
+  return editModSentry(filepath, job)
+}
+/// </Mod>
+
+function previewJobCommand (filepath, job) {
+  const jobName = path.basename(filepath, '.json')
+  log(`The "${jobName}" execution plan:\n`)
+
+  job.directories.forEach(dir => {
+    log(chalk.bold(dir.name))
+    if (dir.options) {
+      const {branch, baseBranch} = dir.options
+      log(`  create branch "${branch}" from base "${baseBranch}"`)
+    }
+    job.mods.forEach(mod => {
+      if (mod.optionValues) {
+        log(`  run "${mod.name}" with configuration`)
+        log(JSON.stringify(mod.optionValues, null, 2)
+          .split('\n')
+          .map(line => '    ' + line)
+          .join('\n')
+        )
+      } else {
+        log(`  run "${mod.name}"`)
+      }
+    })
+    log('\n')
+  })
+  job.githubRepos.forEach(repo => {
+    log(chalk.bold(repo.name))
+    log(`  clone "https://github.com/${repo.name}.git"`)
+
+    const {branch, baseBranch} = repo.options
+    log(`  create branch "${branch}" from base "${baseBranch}"`)
+    job.mods.forEach(mod => {
+      if (mod.optionValues) {
+        log(`  run "${mod.name}" with configuration`)
+        log(JSON.stringify(mod.optionValues, null, 2)
+          .split('\n')
+          .map(line => '    ' + line)
+          .join('\n')
+        )
+      } else {
+        log(`  run "${mod.name}"`)
+      }
+    })
+    log(`  create pull request for "${branch}" at github.com/${repo.name}`)
+    log('\n')
+  })
+
+  log('====================')
+
+  return job
+}
+
+async function runJobCommand (filepath, job) {
+  log('RAN')
+  return job
 }
 
 function deleteJobCommand (filepath, job) {

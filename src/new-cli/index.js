@@ -99,11 +99,6 @@ export default async function main (args) {
     return command()
   }
 
-  const {filepath, job} = await begin(firstArg)
+  return begin(firstArg)
     .then(({filepath, job}) => sentry(filepath, job))
-
-  if (job) {
-    log('Filepath:', filepath)
-    log(JSON.stringify(job, null, 2))
-  }
 }
