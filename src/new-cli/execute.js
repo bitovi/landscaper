@@ -1,15 +1,24 @@
 import tmp from 'tmp'
 import gitClone from 'git-clone'
 import octonode from 'octonode'
-import landscaper from '../'
+import {run as landscaperRun} from '../'
+import dedent from 'dedent'
 import execa from 'execa'
+
+export function formatMod (jobMod) {
+  return {
+    name: jobMod.name,
+    options: jobMod.optionValues
+  }
+}
 
 export async function executeJob (job, accessToken) {
   const log = msg => console.log(msg)
+  const mods = job.mods.map(formatMod)
 
   for (let i = 0; i < job.directories.length; i++) {
     const directory = job.directories[i]
-    await transformRepo(directory, job.mods, void 0, log)
+    await transformRepo(directory, mods, void 0, log)
   }
 
   for (let i = 0; i < job.githubRepos.length; i++) {
@@ -18,7 +27,7 @@ export async function executeJob (job, accessToken) {
     const repo = {
       repoName,
       repoOwner,
-      mods: job.mods,
+      mods,
       options: githubRepo.options
     }
     await processRepo(repo, log, accessToken)
@@ -83,9 +92,9 @@ async function createBranch (directory, baseBranchName, branchName) {
 }
 
 function transformRepo (directory, mods, options, log) {
-  const reporter = landscaper.run(directory, mods, options)
-  reporter.on('log', log => {
-    const msg = formatLog(log)
+  const reporter = landscaperRun(directory, mods, options)
+  reporter.on('log', logItem => {
+    const msg = formatLog(logItem)
     if (msg) {
       log(msg)
     }
@@ -104,52 +113,85 @@ async function commitAndPush (fullProjectUrl, directory, branchName) {
 }
 
 function createPullRequest (directory, options) {
-  const {repoOwner, repoName, baseBranchName, branchName, accessToken} = options
+  const {
+    repoOwner,
+    repoName,
+    baseBranchName,
+    branchName,
+    prTitle,
+    prDescription,
+    accessToken
+  } = options
   const github = octonode.client(accessToken)
   const repo = github.repo(`${repoOwner}/${repoName}`)
   return new Promise((resolve, reject) => {
     repo.pr({
-      title: 'Landscape project',
-      body: 'Landscaping services have been requested. Thank you for using landscaper!',
+      title: prTitle,
+      body: prDescription,
       head: branchName,
       base: baseBranchName
-    }, function (error, status, body) {
+    }, function (error, body) {
       error ? reject(error) : resolve(body.html_url)
     })
   })
 }
 
-async function processRepo (repo, log, accessToken) {
-  const {repoOwner, repoName, mods} = repo
+async function inTempDirectory (task) {
   const {directory, cleanup} = await createTempDirectory()
+  return task(directory)
+    .then(() => cleanup())
+    .catch(async error => {
+      await cleanup()
+      throw error
+    })
+}
+
+function getJobDecription (mods) {
+  return dedent`
+    This pull request was created with [Landscaper](https://github.com/bitovi/landscaper).
+    The following code mods were used to create this PR:
+
+    ${mods.map(mod => dedent`
+      1. **${mod.name}**${mod.description ? `: ${mod.description}` : ''}
+    `)}
+
+    Please review this PR carefully as Landscaper does not guarantee any code mod's quality.
+  `
+}
+
+function processRepo (repo, log, accessToken) {
+  const {repoOwner, repoName, mods} = repo
   const projectUrl = `https://github.com/${repoOwner}/${repoName}.git`
   const fullProjectUrl = `https://${accessToken}@github.com/${repoOwner}/${repoName}.git`
-  const baseBranchName = repo.options.baseBranch
-  const branchName = repo.options.branch
+  const {
+    branch: branchName,
+    baseBranch: baseBranchName,
+    prTitle
+  } = repo.options
 
-  await cloneProject(fullProjectUrl, baseBranchName, directory)
-  log(`cloned ${projectUrl} ${baseBranchName} branch into ${directory}`)
+  return inTempDirectory(async directory => {
+    await cloneProject(fullProjectUrl, baseBranchName, directory)
+    log(`cloned repo "${projectUrl}" branch "${baseBranchName}"`)
 
-  await createBranch(directory, baseBranchName, branchName)
-  log(`created branch ${branchName} in ${directory}`)
+    await createBranch(directory, baseBranchName, branchName)
+    log(`created branch "${branchName}"`)
 
-  await transformRepo(directory, mods, {accessToken}, log)
-  log(`applied mods to ${directory}`)
+    await transformRepo(directory, mods, {accessToken}, log)
+    log(`applied mods to "${branchName}"`)
 
-  await commitAndPush(fullProjectUrl, directory, branchName)
-  log(`pushed branch "${branchName}" to "${projectUrl}"`)
+    await commitAndPush(fullProjectUrl, directory, branchName)
+    log(`pushed branch "${branchName}" to "${projectUrl}"`)
 
-  const prUrl = await createPullRequest(directory, {
-    repoOwner,
-    repoName,
-    baseBranchName,
-    branchName,
-    accessToken
+    const prDescription = getJobDecription(mods)
+    const prUrl = await createPullRequest(directory, {
+      repoOwner,
+      repoName,
+      baseBranchName,
+      branchName,
+      prTitle,
+      prDescription,
+      accessToken
+    })
+    log(`submitted pull request at "${prUrl}"`)
   })
-  log(`submitted PR at ${prUrl}`)
-
-  log('cleaning up')
-  await cleanup()
-
-  log('landscaping complete!')
 }

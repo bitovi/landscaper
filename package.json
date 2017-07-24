@@ -35,6 +35,7 @@
   "dependencies": {
     "babel-runtime": "^6.23.0",
     "chalk": "^2.0.1",
+    "dedent": "^0.7.0",
     "execa": "^0.7.0",
     "git-clone": "^0.1.0",
     "globby": "^6.1.0",

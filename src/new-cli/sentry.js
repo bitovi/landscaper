@@ -323,32 +323,57 @@ function isValidRepo (repo) {
   return repo.split('/').length === 2
 }
 
+function reformatRepo (repo) {
+  const githubDomain = 'github.com/'
+  const domainStart = repo.indexOf(githubDomain)
+  if (domainStart !== -1) {
+    repo = repo.slice(domainStart + githubDomain.length)
+  }
+
+  const gitPostfix = '.git'
+  if (repo.endsWith(gitPostfix)) {
+    repo = repo.slice(0, -gitPostfix.length)
+  }
+
+  return repo
+}
+
 async function askRepo () {
-  let {repo} = await inquirer.prompt([{
-    name: 'repo',
+  let repo = await ask({
     type: 'input',
     message: 'Repo owner/name: (enter nothing to cancel)'
-  }])
+  })
   if (!repo) {
     return null
   }
   repo = repo && repo.trim()
   if (!isValidRepo(repo)) {
-    log('Please enter repos as ownerName/repoName like canjs/can-connect')
-    return askRepo()
+    repo = reformatRepo(repo)
+    if (!isValidRepo(repo)) {
+      log('Please enter repos as ownerName/repoName like canjs/can-connect')
+      return askRepo()
+    }
   }
   return repo
 }
 
-async function askGithubOptions (defaultBranch) {
-  const {baseBranch, newBranch} = await inquirer.prompt([{
-    name: 'newBranch',
+async function askGithubOptions (defaultBranch, defaultPrTitle) {
+  const {
+    baseBranch,
+    branch,
+    prTitle
+  } = await inquirer.prompt([{
+    name: 'branch',
     message: 'What should the branch name be?',
     default: `landscaper/${defaultBranch}`
   }, {
     name: 'baseBranch',
     message: 'Base off which branch?',
     default: 'master'
+  }, {
+    name: 'prTitle',
+    message: 'Pull request title:',
+    default: defaultPrTitle
   }])
 
   // TODO: ensure newBranch does not already exist
@@ -356,7 +381,8 @@ async function askGithubOptions (defaultBranch) {
 
   return {
     baseBranch,
-    branch: newBranch
+    branch,
+    prTitle
   }
 }
 
@@ -401,19 +427,26 @@ async function editGithubRepoSentry (filepath, job) {
   return editGithubRepoSentry(filepath, job)
 }
 
-async function addGithubRepoSentry (filepath, job) {
+async function addGithubRepoSentry (filepath, job, history = []) {
   const name = await askRepo()
   if (!name) {
     return job
   }
 
   const defaultBranch = path.basename(filepath, '.json')
-  const options = await askGithubOptions(defaultBranch)
+
+  let defaultPrTitle = `Landscaper: "${defaultBranch}" services`
+  const previousEntry = history[history.length - 1]
+  if (previousEntry) {
+    defaultPrTitle = previousEntry.options.prTitle
+  }
+  const options = await askGithubOptions(defaultBranch, defaultPrTitle)
   const repoEntry = {
     name,
     options
   }
 
+  const newHistory = [...history, repoEntry]
   const newJob = {
     ...job,
     githubRepos: [...(job.githubRepos || []), repoEntry]
@@ -421,7 +454,7 @@ async function addGithubRepoSentry (filepath, job) {
 
   await saveJob(filepath, newJob)
   log(`Added Github repo "${name}"`)
-  return addGithubRepoSentry(filepath, newJob)
+  return addGithubRepoSentry(filepath, newJob, newHistory)
 }
 
 function humanList (items) {
@@ -488,6 +521,8 @@ async function addModSentry (filepath, job) {
   try {
     // TODO: if loading takes long, show a loading message
     info = await getInfoForMod(modName, {cache})
+    info.shortName = info.name
+    info.name = modName
   } catch (error) {
     log('Error:', error.message)
     return addModSentry(filepath, job)
