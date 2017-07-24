@@ -1,18 +1,14 @@
 import fs from 'fs'
 import path from 'path'
 import chalk from 'chalk'
-import inquirer from 'inquirer'
-
-function log () {
-  console.log.apply(console, arguments)
-}
+import {ask, log, saveJob} from './util'
 
 export default function begin (startingFile) {
   if (startingFile) {
     return loadJobFile(startingFile)
-  } else {
-    return initJobFile()
   }
+
+  return initJobFile()
 }
 
 function isFileNotFound (error) {
@@ -24,9 +20,6 @@ function isMissingExtension (filename) {
 }
 
 function loadJobFile (filename, oldFilename) {
-  if (!oldFilename) {
-    // log(`Loading job "${filename}"...`)
-  }
   return new Promise((resolve, reject) => {
     fs.readFile(filename, {encoding: 'utf8'}, (error, text) => {
       error ? reject(error) : resolve(text)
@@ -45,7 +38,6 @@ function loadJobFile (filename, oldFilename) {
   }).catch(error => {
     if (isFileNotFound(error) && isMissingExtension(filename)) {
       const newFilename = filename + '.json'
-      // log(`Job "${filename}" not found; trying "${newFilename}"...`)
       return loadJobFile(newFilename, filename)
     }
 
@@ -62,11 +54,7 @@ function loadJobFile (filename, oldFilename) {
 }
 
 async function askFilename (message) {
-  const {filename} = await inquirer.prompt([{
-    name: 'filename',
-    type: 'input',
-    message
-  }])
+  const filename = await ask({message})
   const cleanName = filename && filename.trim()
   if (!cleanName) {
     log('No file name? That is not a good idea.')
@@ -77,11 +65,7 @@ async function askFilename (message) {
 }
 
 async function askDirectory (message) {
-  const {directory} = await inquirer.prompt([{
-    name: 'directory',
-    type: 'input',
-    message
-  }])
+  const directory = await ask({message})
   const cleanName = directory && directory.trim()
   if (!cleanName) {
     return null
@@ -125,15 +109,6 @@ async function initJobFile () {
     mods: []
   }
 
-  const text = JSON.stringify(initialJob, null, 2)
-  return new Promise((resolve, reject) => {
-    fs.writeFile(filepath, text, error => {
-      if (error) {
-        return reject(error)
-      }
-
-      log(`Created "${filepath}"`)
-      resolve({filepath, job: initialJob})
-    })
-  })
+  await saveJob(filepath, initialJob)
+  return {filepath, job: initialJob}
 }

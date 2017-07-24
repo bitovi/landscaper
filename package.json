@@ -26,8 +26,7 @@
     }
   },
   "bin": {
-    "landscaper": "./lib/cli.js",
-    "lc": "./bin/landscaper.js"
+    "landscaper": "./bin/landscaper.js"
   },
   "bugs": {
     "url": "https://github.com/bitovi/landscaper/issues"

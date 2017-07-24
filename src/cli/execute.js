@@ -18,7 +18,7 @@ export async function executeJob (job, accessToken) {
 
   for (let i = 0; i < job.directories.length; i++) {
     const directory = job.directories[i]
-    await transformRepo(directory, mods, void 0, log)
+    await transformRepo(directory.name, mods, void 0, log)
   }
 
   for (let i = 0; i < job.githubRepos.length; i++) {
@@ -106,10 +106,13 @@ function transformRepo (directory, mods, options, log) {
   })
 }
 
-async function commitAndPush (fullProjectUrl, directory, branchName) {
+async function commitChanges (directory, commitMessage) {
   await execa('git', ['-C', directory, 'add', '.'])
-  await execa('git', ['-C', directory, 'commit', '-m', 'Landscaping services'])
-  await execa('git', ['-C', directory, 'push', '-u', fullProjectUrl, branchName])
+  await execa('git', ['-C', directory, 'commit', '-m', commitMessage])
+}
+
+async function pushChanges (directory, fullProjectUrl, branchName) {
+  return execa('git', ['-C', directory, 'push', '-u', fullProjectUrl, branchName])
 }
 
 function createPullRequest (directory, options) {
@@ -159,6 +162,10 @@ function getJobDecription (mods) {
   `
 }
 
+function isEmptyCommitError (error) {
+  return error && error.message && error.message.includes('nothing to commit')
+}
+
 function processRepo (repo, log, accessToken) {
   const {repoOwner, repoName, mods} = repo
   const projectUrl = `https://github.com/${repoOwner}/${repoName}.git`
@@ -170,6 +177,11 @@ function processRepo (repo, log, accessToken) {
   } = repo.options
 
   return inTempDirectory(async directory => {
+    // Potential error handling
+    // TODO: ensure clone is successful
+    // TODO: ensure newBranch does not already exist
+    // TODO: ensure baseBranch does exist
+
     await cloneProject(fullProjectUrl, baseBranchName, directory)
     log(`cloned repo "${projectUrl}" branch "${baseBranchName}"`)
 
@@ -179,7 +191,17 @@ function processRepo (repo, log, accessToken) {
     await transformRepo(directory, mods, {accessToken}, log)
     log(`applied mods to "${branchName}"`)
 
-    await commitAndPush(fullProjectUrl, directory, branchName)
+    try {
+      await commitChanges(directory, prTitle)
+    } catch (error) {
+      if (isEmptyCommitError(error)) {
+        log('NOTE: Skipping pull request as there were no changes.')
+        return false
+      }
+      throw error
+    }
+
+    await pushChanges(directory, fullProjectUrl, branchName)
     log(`pushed branch "${branchName}" to "${projectUrl}"`)
 
     const prDescription = getJobDecription(mods)
@@ -193,5 +215,6 @@ function processRepo (repo, log, accessToken) {
       accessToken
     })
     log(`submitted pull request at "${prUrl}"`)
+    return true
   })
 }
