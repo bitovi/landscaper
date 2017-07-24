@@ -23,14 +23,14 @@ export default function (mod, modFilePath) {
 
     run (directory, options) {
       const paths = typeof options.path === 'string' ? options.path.split(',') : options.path
-      const files = globby.sync(paths, { cwd: directory })
+      const files = globby.sync(paths, { cwd: directory, realpath: true })
       const codeOptions = {
         path: files,
         transform: fixedPath,
         babel: true,
         extensions: 'js',
         runInBand: false,
-        silent: true,
+        silent: false,
         parser: 'babel',
         landscaper: options
       }

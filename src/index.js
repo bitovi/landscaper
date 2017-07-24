@@ -57,8 +57,8 @@ export function getInfoForMod (modName, options = {}) {
   @params
   directory string
     directory containing the project
-  mods Array<Object{id: string, options: object}>
-    transforms (id is a url or require path)
+  mods Array<Object{name: string, options: object}>
+    transforms (name is a url or require path)
     options is a map of <inquirer.name, supplied value>
   options object
     accessToken string
