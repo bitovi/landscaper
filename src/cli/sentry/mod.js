@@ -5,6 +5,9 @@ import PackageCache from '../../utils/package-cache'
 import {log, ask, saveJob, humanList} from '../util'
 
 const cache = PackageCache.auto()
+process.on('beforeExit', function () {
+  cache.empty()
+})
 
 function getModDisplayName (mod) {
   if (mod.description) {
