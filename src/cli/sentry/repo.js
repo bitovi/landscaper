@@ -1,4 +1,6 @@
 import path from 'path'
+import dedent from 'dedent'
+import octonode from 'octonode'
 import {ask, log, saveJob, humanList} from '../util'
 
 function isValidRepo (repo) {
@@ -99,10 +101,193 @@ export async function editRepo (filepath, job) {
   return editRepo(filepath, job)
 }
 
-export async function addRepo (filepath, job, history = []) {
+function getRepoOwner (repoSlug) {
+  return repoSlug.split('/')[0]
+}
+
+function wildcardAdviser (neverSuggest) {
+  let hasSuggestedWildcard = neverSuggest
+  return function shouldSuggestWildcard (repoNameHistory, usedWildcard) {
+    if (hasSuggestedWildcard || usedWildcard) {
+      return false
+    }
+
+    if (repoNameHistory.length < 2) {
+      return false
+    }
+
+    const [lastLastRepo, lastRepo] = repoNameHistory.slice(-2)
+    const lastLastOwner = getRepoOwner(lastLastRepo)
+    const lastOwner = getRepoOwner(lastRepo)
+    const isSameOwner = lastLastOwner === lastOwner
+    if (isSameOwner) {
+      hasSuggestedWildcard = true
+      return true
+    }
+  }
+}
+
+const shouldSuggestWildcard = wildcardAdviser()
+const wildcardSuggestionMessage = ownerName => dedent`
+It looks like you are adding multiple repos from the same owner.
+Landscaper supports basic wildcard (*) expressions for repo names.
+To add multiple repos from the same owner at once, try:
+
+  ${ownerName}/* or ${ownerName}/prefix-*, etc
+
+Wildcards do not work on the owner/ side due to API limitations.
+`
+
+function getRepoName (repoSlug) {
+  return repoSlug.split('/').pop()
+}
+
+function isWildcard (repoSlug) {
+  const repoName = getRepoName(repoSlug)
+  return repoName.includes('*')
+}
+
+function wildcardMatcher (wildcardExpression) {
+  const search = wildcardExpression.split('*').join('(.*)')
+  const regex = new RegExp(`^${search}$`)
+  return function matchesWildcard (str) {
+    return regex.test(str)
+  }
+}
+
+function isNotFoundError (error) {
+  return error && error.message.toLowerCase().includes('not found')
+}
+
+async function getOwnerRepos (repoOwner, accessToken) {
+  let repos
+  try {
+    repos = await getReposForOwner(repoOwner, true, accessToken)
+  } catch (error) {
+    if (!isNotFoundError(error)) {
+      throw error
+    }
+    repos = await getReposForOwner(repoOwner, false, accessToken)
+  }
+  return repos
+}
+
+async function getReposForOwner (repoOwner, isOrg, accessToken) {
+  const github = octonode.client(accessToken)
+  const owner = isOrg ? github.org(repoOwner) : github.user(repoOwner)
+  let repos = []
+  let page = 0
+  while (true) {
+    const {repoPage, isDone} = await getRepoPage(owner, page++)
+    repos = [...repos, ...repoPage]
+    if (isDone) {
+      break
+    }
+  }
+  return repos
+}
+
+async function getRepoPage (owner, page) {
+  const pageSize = 50
+  return new Promise((resolve, reject) => {
+    owner.repos({
+      page: page,
+      per_page: pageSize
+    }, (error, repos) => {
+      if (error) {
+        return reject(error)
+      }
+      const isDone = repos.length < pageSize
+      resolve({isDone, repoPage: repos})
+    })
+  })
+}
+
+const privateSearchMessage = dedent`
+  To find private repos, I need an access token.
+  Visit your https://github.com/settings/tokens page to make one.
+  The token needs scope "repo" to have access to all repos to which you have access.
+  This token can be the same one you use to submit pull requests.
+  Without an access token, I can only find public repos.
+`
+
+export async function addRepo (filepath, job, history = [], usedWildcard) {
+  const repoNameHistory = history.map(repo => repo.name)
+  if (shouldSuggestWildcard(repoNameHistory, usedWildcard)) {
+    const lastOwner = getRepoOwner(repoNameHistory.pop())
+    log(wildcardSuggestionMessage(lastOwner))
+  }
+
   const name = await askRepo()
   if (!name) {
     return job
+  }
+
+  const continueAdd = () => (
+    addRepo(filepath, job, history, usedWildcard)
+  )
+
+  let repoNames = [name]
+  if (isWildcard(name)) {
+    const repoOwner = getRepoOwner(name)
+    const repoName = getRepoName(name)
+
+    if (!usedWildcard) {
+      log(privateSearchMessage)
+      usedWildcard = true
+    }
+
+    const accessToken = await ask({
+      message: 'Github access token: (enter nothing for public only)'
+    })
+    let allRepos
+    try {
+      allRepos = await getOwnerRepos(repoOwner, accessToken)
+    } catch (error) {
+      if (isNotFoundError(error)) {
+        log(`The org/user "${repoOwner}" was not found`)
+        return continueAdd()
+      }
+      throw error
+    }
+    if (allRepos.length < 1) {
+      const repos = accessToken ? 'repos' : 'public repos'
+      log(`The org/user "${repoOwner}" has no ${repos}`)
+      return continueAdd()
+    }
+    const matchesWildcard = wildcardMatcher(repoName)
+    const matchedRepos = allRepos.filter(repo => matchesWildcard(repo.name))
+    if (matchedRepos.length < 1) {
+      log(`No repos from org/user "${repoOwner}" matched "${repoName}"`)
+      return continueAdd()
+    }
+
+    const chosenRepos = await ask({
+      type: 'checkbox',
+      message: 'Which repos should be added?',
+      choices: matchedRepos.map(repo => ({
+        value: repo.full_name,
+        message: repo.full_name
+      }))
+    })
+
+    if (!chosenRepos.length) {
+      return continueAdd()
+    }
+
+    repoNames = chosenRepos
+  }
+
+  const newRepoNames = repoNames.filter(name => {
+    const existingRepo = job.githubRepos.find(r => r.name === name)
+    if (existingRepo) {
+      log(`Already added "${name}", ignoring the duplicate`)
+    }
+    return !existingRepo
+  })
+
+  if (newRepoNames.length < 1) {
+    return continueAdd()
   }
 
   const defaultBranch = path.basename(filepath, '.json')
@@ -113,20 +298,20 @@ export async function addRepo (filepath, job, history = []) {
     defaultPrTitle = previousEntry.options.prTitle
   }
   const options = await askGithubOptions(defaultBranch, defaultPrTitle)
-  const repoEntry = {
+  const repoEntries = newRepoNames.map(name => ({
     name,
     options
-  }
+  }))
 
-  const newHistory = [...history, repoEntry]
+  const newHistory = [...history, ...repoEntries]
   const newJob = {
     ...job,
-    githubRepos: [...(job.githubRepos || []), repoEntry]
+    githubRepos: [...job.githubRepos, ...repoEntries]
   }
 
   await saveJob(filepath, newJob)
-  log(`Added Github repo "${name}"`)
-  return addRepo(filepath, newJob, newHistory)
+  log(`Added Github repo ${humanList(newRepoNames.map(n => `"${n}"`))}`)
+  return addRepo(filepath, newJob, newHistory, usedWildcard)
 }
 
 export async function removeRepo (filepath, job) {
