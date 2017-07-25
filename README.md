@@ -1,4 +1,8 @@
-# Landscaper
+<h1 align='center'>
+<br/>
+<img src='/assets/landscaper.png' alt='Landscaper' width='500'>
+<br/><br/>
+</h1>
 
 > Apply code mods to projects
 
@@ -78,7 +82,10 @@ Note: Configuration options go through [`inquirer.prompt()`](https://github.com/
 
 
 ---
-
-[![Bitovi](assets/bitovi.svg)](https://www.bitovi.com/)
-
-Built and maintained by the open source team at [Bitovi](https://www.bitovi.com/).
+<h6 align='center'>
+<br/>
+<a href='https://www.bitovi.com/'><img src='/assets/bitovi.png' alt='Bitovi' width='300'></a>
+<br/>
+Built and maintained by the open source team at <a href='https://www.bitovi.com/'>Bitovi</a>.
+<br/>
+</h6>
