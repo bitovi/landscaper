@@ -19,6 +19,14 @@ function isMissingExtension (filename) {
   return !filename.endsWith('.json')
 }
 
+function isJobLike (job) {
+  return [
+    'directories',
+    'githubRepos',
+    'mods'
+  ].every(key => Array.isArray(job[key]))
+}
+
 function loadJobFile (filename, oldFilename) {
   return new Promise((resolve, reject) => {
     fs.readFile(filename, {encoding: 'utf8'}, (error, text) => {
@@ -32,7 +40,9 @@ function loadJobFile (filename, oldFilename) {
       throw new Error(`Malformed JSON in "${filename}": ` + error)
     }
 
-    // TODO: validate the structure of the JSON
+    if (!isJobLike(json)) {
+      throw new Error(`File "${filename}" does not look like a Landscaper job."`)
+    }
 
     return {filepath: filename, job: json}
   }).catch(error => {
@@ -89,8 +99,10 @@ You can view/edit/commit this file if you want.
 Don't worry, I'll try to do most of the legwork.
 `
 
-async function initJobFile () {
-  log(introMessage)
+async function initJobFile (isRetry) {
+  if (!isRetry) {
+    log(introMessage)
+  }
 
   let filename = await askFilename('What should we name this new job file?')
   if (isMissingExtension(filename)) {
@@ -102,6 +114,33 @@ async function initJobFile () {
 
   const filepath = path.join(directory, filename)
   // TODO: ensure we aren't overriding and ask --force if so
+  if (fs.existsSync(filepath)) {
+    let savedJob
+    try {
+      savedJob = await loadJobFile(filepath)
+    } catch (error) {}
+    if (savedJob) {
+      log(`File "${filename}" looks like a Landscaper job`)
+      const shouldUse = await ask({
+        type: 'confirm',
+        message: 'Use this existing job?'
+      })
+
+      if (shouldUse) {
+        return savedJob
+      }
+    }
+
+    log(`File "${filename}" already exists in "${directory}"`)
+    const shouldReplace = await ask({
+      type: 'confirm',
+      message: 'Replace this file?'
+    })
+
+    if (!shouldReplace) {
+      return initJobFile(true)
+    }
+  }
 
   const initialJob = {
     directories: [],
