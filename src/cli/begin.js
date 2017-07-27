@@ -99,8 +99,8 @@ You can view/edit/commit this file if you want.
 Don't worry, I'll try to do most of the legwork.
 `
 
-async function initJobFile (isRetry) {
-  if (!isRetry) {
+export async function initJobFile (hideWelcome) {
+  if (!hideWelcome) {
     log(introMessage)
   }
 

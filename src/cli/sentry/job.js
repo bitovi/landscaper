@@ -92,7 +92,7 @@ export async function runJob (filepath, job) {
     log(accessTokenMessage)
 
     accessToken = await ask({
-      type: 'input',
+      type: 'password',
       message: 'Github access token:'
     })
     if (!accessToken) {

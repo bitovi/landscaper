@@ -1,4 +1,5 @@
 const fs = require('fs')
+const path = require('path')
 const inquirer = require('inquirer')
 
 function log () {
@@ -34,4 +35,8 @@ function humanList (items) {
   return `${items.join(', ')}, and ${last}`
 }
 
-module.exports = {ask, log, saveJob, humanList}
+async function isGitRepo (directory) {
+  return fs.existsSync(path.join(directory, '.git'))
+}
+
+module.exports = {ask, log, saveJob, humanList, isGitRepo}
