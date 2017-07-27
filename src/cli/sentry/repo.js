@@ -159,6 +159,13 @@ function isNotFoundError (error) {
   return error && error.message.toLowerCase().includes('not found')
 }
 
+function uniqueRepos (repos) {
+  return repos.reduce((uniques, repo) => {
+    const existingRepo = uniques.find(r => r.name === repo.name)
+    return existingRepo ? uniques : [...uniques, repo]
+  }, [])
+}
+
 async function getOwnerRepos (repoOwner, accessToken) {
   let repos
   try {
@@ -169,7 +176,7 @@ async function getOwnerRepos (repoOwner, accessToken) {
     }
     repos = await getReposForOwner(repoOwner, false, accessToken)
   }
-  return repos
+  return uniqueRepos(repos)
 }
 
 async function getReposForOwner (repoOwner, isOrg, accessToken) {
@@ -190,10 +197,7 @@ async function getReposForOwner (repoOwner, isOrg, accessToken) {
 async function getRepoPage (owner, page) {
   const pageSize = 50
   return new Promise((resolve, reject) => {
-    owner.repos({
-      page: page,
-      per_page: pageSize
-    }, (error, repos) => {
+    owner.repos({page, per_page: pageSize}, (error, repos) => {
       if (error) {
         return reject(error)
       }
@@ -238,6 +242,7 @@ export async function addRepo (filepath, job, history = [], usedWildcard) {
     }
 
     const accessToken = await ask({
+      type: 'password',
       message: 'Github access token: (enter nothing for public only)'
     })
     let allRepos
