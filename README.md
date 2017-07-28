@@ -32,11 +32,15 @@ Landscaper can run code mods in a series back to back, no problem.
 
 > "I need to fix a typo in the README of every personal project I ever published on Github, ever."
 
-Landscaper can take your update script and run it against the master branch of each of your repositories. Once finished, it will push the branch with changes and create a pull request.
+Landscaper can take your update script and run it against a new branch forked from the master branch of each of your repositories. Once finished, it will push the new branch with changes and create a pull request.
 
 > "I want to update pre-release version dependencies in the package.json of every project in my Github organization."
 
 Sure, we have a [code mod](https://gist.githubusercontent.com/phillipskevin/75a3626b00dd32709b13132706cb7f30/raw/bbda2496be6a7f97032ef6f60266172fad7309a7/remove-pre-release-deps.js) for that already.
+
+> "It's {CURRENT-YEAR}, I want to update the copyright year in all my LICENSE files."
+
+Sure, we have a [code mod](https://gist.github.com/andrejewski/8d0b4927f73978e78b0105f84ad8abd4) for that already.
 
 > "I want to switch from tabs|spaces to spaces|tabs in all my diary entries in my `Desktop` folder"
 
