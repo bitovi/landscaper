@@ -252,7 +252,10 @@ function createPullRequest (directory, options) {
 async function inTempDirectory (task) {
   const {directory, cleanup} = await createTempDirectory()
   return task(directory)
-    .then(() => cleanup())
+    .then(async value => {
+      await cleanup()
+      return value
+    })
     .catch(async error => {
       await cleanup()
       throw error
