@@ -1,7 +1,7 @@
 {
   "name": "landscaper",
   "description": "CodeMods as a Service",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "author": "Bitovi",
   "ava": {
     "require": [
