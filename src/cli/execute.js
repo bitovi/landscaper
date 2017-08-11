@@ -269,7 +269,7 @@ function getJobDecription (mods) {
 
     ${mods.map(mod => dedent`
       1. **${mod.name}**${mod.description ? `: ${mod.description}` : ''}
-    `)}
+    `).join('\n')}
 
     Please review this PR carefully as Landscaper does not guarantee any code mod's quality.
   `
