@@ -192,12 +192,11 @@ function createTempDirectory () {
   })
 }
 
-async function cloneProject (directory, githubUrl) {
-  await execa('git', ['clone', '--depth', '1', '--', githubUrl, directory])
+async function cloneProject (directory, baseBranchName, githubUrl) {
+  await execa('git', ['clone', '--depth', '1', '-b', baseBranchName, '--', githubUrl, directory])
 }
 
-async function createBranch (directory, baseBranchName, branchName) {
-  await execa('git', ['-C', directory, 'checkout', baseBranchName])
+async function createBranch (directory, branchName) {
   await execa('git', [ '-C', directory, 'checkout', '-b', branchName ])
 }
 
@@ -289,7 +288,7 @@ function isMissingRepoError (error) {
 }
 
 function isMissingBaseBranchError (error) {
-  return hasKeyPhrases(getErrorMessage(error), ['pathspec', 'did not match'])
+  return hasKeyPhrases(getErrorMessage(error), ['not found in upstream origin'])
 }
 
 function isEmptyCommitError (error) {
@@ -316,23 +315,19 @@ function processRepo (repo, log, accessToken) {
 
   return inTempDirectory(async directory => {
     try {
-      await cloneProject(directory, fullProjectUrl)
+      await cloneProject(directory, baseBranchName, fullProjectUrl)
     } catch (error) {
       if (isMissingRepoError(error)) {
         throw new Error(`Repository not found`)
       }
-      throw error
-    }
-    log(`cloned repository "${projectUrl}"`)
-
-    try {
-      await createBranch(directory, baseBranchName, branchName)
-    } catch (error) {
       if (isMissingBaseBranchError(error)) {
         throw new Error(`Could not checkout non-existent branch "${baseBranchName}"`)
       }
       throw error
     }
+    log(`cloned repository "${projectUrl}"`)
+
+    await createBranch(directory, branchName)
     log(`created branch "${branchName}" from "${baseBranchName}"`)
 
     await transformRepo(directory, mods, {accessToken}, log)
